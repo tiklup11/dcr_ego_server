@@ -1,0 +1,14 @@
+{
+    "tranformation_ref":"/survey/tranfomation/tranfomation_name",
+    "tranformation":{
+        "sql":[
+            "select * from table_1"
+        ]
+    },
+    "table_naming":{
+        "airline.csv":"airline_users",
+        "survey.csv":"survey_dogs"
+    },
+    "output_name":"survey_output",
+    "destination_owner":["survey_id"]
+}

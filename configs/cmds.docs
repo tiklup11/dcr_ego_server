@@ -1,0 +1,25 @@
+#cmds
+
+docker build -t go-hello-world .
+
+docker run go-hello-world
+
+//to get into sql : 
+sudo mysql -u root -p
+
+
+#references:
+
+https://linuxize.com/post/how-to-create-mysql-user-accounts-and-grant-privileges/
+
+
+#envs
+
+sql-username : testuser
+sql-pass: testpass
+
+
+#ego cmds
+ego-go build main.go
+ego sign main
+OE_SIMULATION=1 ego run main

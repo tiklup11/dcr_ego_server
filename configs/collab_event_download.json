@@ -1,0 +1,5 @@
+{
+    "tranformation_ref":"/survey/tranfomation/tranfomation_name",
+    "requester":"survey",
+    "output_folder_path":""
+}
