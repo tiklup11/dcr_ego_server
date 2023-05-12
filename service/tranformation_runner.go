@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
+	"github.com/tiklup11/go-hello-world/database"
 	"github.com/tiklup11/go-hello-world/utils"
 )
 
-func GenerateScriptAndRun() string {
+func GenerateScriptAndRun(refId string) string {
 
 	go_tranformation_path := "../go_tranformations/test.zip"
 	utils.ChangeDirTo(go_tranformation_path)
@@ -31,15 +33,48 @@ func GenerateScriptAndRun() string {
 		return "error making script executable"
 	}
 
-	// Run the script and capture the output
-	out := RunScript("./myscript.sh")
+	hasScriptFinished := make(chan bool)
+	out := make(chan string)
+
+	// Start a goroutine to execute RunScript in the background
+	go func() {
+		// Run the script and capture the output
+		output := RunScript("./myscript.sh")
+		// RunScript("./hello.sh")
+		// Signal that the function has completed executing
+		hasScriptFinished <- true
+		out <- output
+	}()
+
+	// Wait for the RunScript function to complete before executing f2()
+	<-hasScriptFinished
+	output := <-out
 
 	// Print the output
-	fmt.Println(string(out))
+	fmt.Println(string(output))
+
+	formatedOutput := formatOutput(string(output))
+	fmt.Println("saving to db..")
+	//saving to db
+	saveToDB(refId, formatedOutput)
 
 	utils.DeleteFolder(go_tranformation_path)
 
-	return string(out)
+	return string(output)
+}
+
+func formatOutput(output string) string {
+	lines := strings.Split(output, "\n")
+	lastLine := lines[len(lines)-2]
+
+	return lastLine
+}
+
+func saveToDB(key string, value string) {
+	if err := database.InsertFunc(key, value); err != nil {
+		fmt.Println(err)
+		return
+	}
 }
 
 func generateScript() string {

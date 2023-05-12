@@ -2,14 +2,34 @@ package service
 
 import (
 	"archive/zip"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/tiklup11/go-hello-world/constants"
+	"github.com/tiklup11/go-hello-world/database"
 )
 
+func isTranformationAlreadyDone(refid string) bool {
+	fmt.Print("checking if tranformation is already executed")
+	fmt.Print("\n")
+
+	// return err != nil
+	value, err := database.Read(refid, constants.DbPath)
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
+	fmt.Println("tranformation is already executed")
+	fmt.Println("value for refid ", refid, " = ", value)
+	return true
+}
+
+// this is to handle [/Run POST] requests
 func RunHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Print("POST request recieved at /run \n")
 	fmt.Print("processing request.. \n")
@@ -25,6 +45,18 @@ func RunHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		fmt.Print(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Get the value of the myParam field
+	refId := r.FormValue("refid")
+	fmt.Print()
+
+	//checking if the solution already exists
+	isAlreadyDone := isTranformationAlreadyDone(refId)
+
+	if isAlreadyDone {
+		fmt.Fprintf(w, "tranformation already executed, to get results, request /download with refid")
 		return
 	}
 
@@ -101,7 +133,7 @@ func RunHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// running script
-	_ = GenerateScriptAndRun()
+	_ = GenerateScriptAndRun(refId)
 
 	// fmt.Print("logging output..\n")
 	// fmt.Print(output)
@@ -109,15 +141,41 @@ func RunHandler(w http.ResponseWriter, r *http.Request) {
 	// fmt.Fprintf(w, output)
 }
 
-// not in use, endpoint : "/"
+// not in use, endpoint : [/ GET]
+func HandleDownload(w http.ResponseWriter, r *http.Request) {
+	// Read the entire file into memory
+
+	refid := r.URL.Query().Get("refid")
+	if refid == "" {
+		http.Error(w, "refid parameter is missing", http.StatusBadRequest)
+		return
+	}
+
+	value, err := database.Read(refid, constants.DbPathFromOutside)
+
+	if err != nil {
+		value, err = database.Read(refid, constants.DbPath)
+		if err != nil {
+			fmt.Fprintf(w, err.Error())
+		}
+	}
+
+	data := map[string]string{
+		refid: value,
+	}
+
+	// Marshal the map into a JSON byte slice
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	// Do something with the refid parameter
+	fmt.Fprintf(w, string(jsonData))
+}
+
+// not in use, endpoint : [/ GET]
 func HandleIndex(w http.ResponseWriter, r *http.Request) {
-	html := `<html>
-				<body>
-					<form action="/run" method="post" enctype="multipart/form-data">
-						<input type="file" name="file"><br><br>
-						<input type="submit" value="Run">
-					</form>
-				</body>
-			</html>`
-	fmt.Fprint(w, html)
+	fmt.Fprintf(w, "Hello, HTTPS World!")
 }
